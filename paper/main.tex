@@ -16,7 +16,7 @@
 Configuration Defaults and the Reproducibility of a\\
 Robot Learning Benchmark}
 \author{Yandong Huang\\
-\small \todo{affiliation / contact}}
+\small Beijing Information Science and Technology University}
 \date{\today}
 
 \begin{document}
@@ -264,7 +264,10 @@ optimum: success is 0, 6, 4, 12, 10, \textbf{28}, 22, 4 and 0\% for
 actions in both cases even though the prediction horizons (100 and 50) and model
 sizes (80M and 450M) differ by a factor of five, which suggests the quantity is set
 by the task's temporal scale rather than by the architecture.
-\todo{These two sweeps use 50 episodes; re-run at 200 for a uniform protocol.}
+These two sweeps use 50 episodes per setting rather than the 200 used elsewhere in
+this paper. Adjacent settings differ by only a few percentage points, which a
+50-episode sample cannot resolve; the coarse shape of the curves, and in particular
+the collapse above 50 actions, is however far outside that uncertainty.
 
 \section{Where to Spend: A Cost-Normalized View}
 \label{sec:where}
@@ -363,8 +366,8 @@ argument for doing them before spending compute.
 other environments is untested and is the most important open question.
 
 \textbf{One training seed.} The factorial is replicated across two training budgets
-but not yet across training seeds.
-\todo{a second training seed is running; report when available.}
+but not yet across training seeds; a second seed is in progress at the time of
+writing.
 
 \textbf{ACT was not configuration-tuned}, as discussed in \S\ref{sec:method}.
 
