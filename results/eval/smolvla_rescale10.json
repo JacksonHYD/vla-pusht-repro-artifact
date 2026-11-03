@@ -1,0 +1,113 @@
+{
+  "per_task": [
+    {
+      "task_group": "pusht",
+      "task_id": 0,
+      "metrics": {
+        "sum_rewards": [
+          55.845008521273016,
+          1.3026898726313303,
+          12.79862709107444,
+          31.98338806371508,
+          0.0,
+          0.0,
+          5.794107605748837,
+          0.0,
+          0.35572041691949,
+          15.801110884981432
+        ],
+        "max_rewards": [
+          0.22148790256884007,
+          0.01369852355339584,
+          0.37314264477296294,
+          0.25252250812033417,
+          0.0,
+          0.0,
+          0.1482941845626561,
+          0.0,
+          0.0033558529898065096,
+          0.3291648122171896
+        ],
+        "successes": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "done_steps": [
+          300,
+          300,
+          300,
+          300,
+          300,
+          300,
+          300,
+          300,
+          300,
+          300
+        ],
+        "video_paths": [
+          "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_0.mp4",
+          "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_1.mp4",
+          "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_2.mp4",
+          "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_3.mp4",
+          "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_4.mp4",
+          "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_5.mp4",
+          "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_6.mp4",
+          "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_7.mp4",
+          "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_8.mp4",
+          "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_9.mp4"
+        ],
+        "predicted_video_paths": []
+      }
+    }
+  ],
+  "per_group": {
+    "pusht": {
+      "avg_sum_reward": 12.388065245634362,
+      "avg_max_reward": 0.1341666428785185,
+      "pc_success": 0.0,
+      "n_episodes": 10,
+      "video_paths": [
+        "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_0.mp4",
+        "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_1.mp4",
+        "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_2.mp4",
+        "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_3.mp4",
+        "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_4.mp4",
+        "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_5.mp4",
+        "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_6.mp4",
+        "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_7.mp4",
+        "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_8.mp4",
+        "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_9.mp4"
+      ],
+      "predicted_video_paths": []
+    }
+  },
+  "overall": {
+    "avg_sum_reward": 12.388065245634362,
+    "avg_max_reward": 0.1341666428785185,
+    "pc_success": 0.0,
+    "n_episodes": 10,
+    "eval_s": 73.79306435585022,
+    "eval_ep_s": 7.37930645942688,
+    "video_paths": [
+      "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_0.mp4",
+      "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_1.mp4",
+      "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_2.mp4",
+      "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_3.mp4",
+      "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_4.mp4",
+      "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_5.mp4",
+      "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_6.mp4",
+      "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_7.mp4",
+      "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_8.mp4",
+      "/mnt/f/vla/outputs/eval/smolvla_rescale10/videos/pusht_0/eval_episode_9.mp4"
+    ],
+    "predicted_video_paths": []
+  }
+}

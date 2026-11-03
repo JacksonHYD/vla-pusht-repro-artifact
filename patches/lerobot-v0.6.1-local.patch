@@ -1,0 +1,210 @@
+diff --git a/src/lerobot/policies/act/modeling_act.py b/src/lerobot/policies/act/modeling_act.py
+index 1432b68a..b5ee53e4 100644
+--- a/src/lerobot/policies/act/modeling_act.py
++++ b/src/lerobot/policies/act/modeling_act.py
+@@ -430,7 +430,9 @@ class ACT(nn.Module):
+             cls_joint_is_pad = torch.full(
+                 (batch_size, 2 if self.config.robot_state_feature else 1),
+                 False,
+-                device=batch[OBS_STATE].device,
++                # Use ACTION's device: this branch only runs when ACTION is in the batch, while
++                # OBS_STATE may legitimately be absent when the policy has no robot-state input.
++                device=batch[ACTION].device,
+             )
+             key_padding_mask = torch.cat(
+                 [cls_joint_is_pad, batch["action_is_pad"]], axis=1
+@@ -453,9 +455,17 @@ class ACT(nn.Module):
+             # When not using the VAE encoder, we set the latent to be all zeros.
+             mu = log_sigma_x2 = None
+             # TODO(rcadene, alexander-soare): remove call to `.to` to speedup forward ; precompute and use buffer
+-            latent_sample = torch.zeros([batch_size, self.config.latent_dim], dtype=torch.float32).to(
+-                batch[OBS_STATE].device
+-            )
++            # OBS_STATE may be absent when the policy has no robot-state input, so pick a device from
++            # whichever input tensor this batch does carry.
++            if OBS_STATE in batch:
++                _dev = batch[OBS_STATE].device
++            elif OBS_IMAGES in batch:
++                _dev = batch[OBS_IMAGES][0].device
++            elif ACTION in batch:
++                _dev = batch[ACTION].device
++            else:
++                _dev = batch[OBS_ENV_STATE].device
++            latent_sample = torch.zeros([batch_size, self.config.latent_dim], dtype=torch.float32).to(_dev)
+ 
+         # Prepare transformer encoder inputs.
+         encoder_in_tokens = [self.encoder_latent_input_proj(latent_sample)]
+diff --git a/src/lerobot/scripts/lerobot_eval.py b/src/lerobot/scripts/lerobot_eval.py
+index 7629d62e..984d0742 100644
+--- a/src/lerobot/scripts/lerobot_eval.py
++++ b/src/lerobot/scripts/lerobot_eval.py
+@@ -52,6 +52,7 @@ You can learn about the CLI options for this script in the `EvalPipelineConfig`
+ import concurrent.futures as cf
+ import json
+ import logging
++import os
+ import threading
+ import time
+ from collections import defaultdict
+@@ -216,6 +217,15 @@ def rollout(
+     """
+     assert isinstance(policy, nn.Module), "Policy must be a PyTorch nn module."
+ 
++    # Pin the global RNG for this batch. Action sampling (the diffusion policy's denoising
++    # loop draws from the global torch RNG) otherwise starts from wherever the previous
++    # batch left the stream, which depends on how long that batch ran. Two configs that
++    # differ only in episode_length therefore get different action noise and their
++    # comparison is unpaired. Seeding per batch keeps the noise identical across configs
++    # evaluated with the same --seed.
++    if seeds:
++        set_seed(seeds[0])
++
+     # Reset the policy and environments.
+     policy.reset()
+     # NEW_ROLLOUT_OPTION tells FreezeAfterEpisodeEnd this is a genuine new episode, as
+@@ -283,7 +293,10 @@ def rollout(
+                 try:
+                     observation["task"] = list(env.call("task"))
+                 except (AttributeError, NotImplementedError):
+-                    observation["task"] = [""] * env.num_envs
++                    # Some envs (e.g. pusht) expose neither task_description nor task, yet
++                    # policies like SmolVLA tokenize an instruction. Allow supplying one from
++                    # the shell; unset keeps the old empty-string behaviour.
++                    observation["task"] = [os.environ.get("LEROBOT_TASK_DESCRIPTION", "")] * env.num_envs
+ 
+             # Apply environment-specific preprocessing (e.g., LiberoProcessorStep for LIBERO)
+             observation = env_preprocessor(observation)
+@@ -303,6 +316,30 @@ def rollout(
+             action_numpy: np.ndarray = action.to("cpu").numpy()
+             assert action_numpy.ndim == 2, "Action dimensions should be (batch, action_dim)"
+ 
++            # Debug aid: LEROBOT_DEBUG_ACTIONS=<N> prints the first N executed actions and the
++            # observation state, which is the quickest way to tell "the policy outputs garbage"
++            # apart from "the actions never reach the env".
++            _dbg = os.environ.get("LEROBOT_DEBUG_ACTIONS")
++            if _dbg and step < int(_dbg):
++                _state = observation.get("observation.state")
++                _s = _state[0].tolist() if _state is not None else None
++                print(
++                    f"[action] step={step} act={np.round(action_numpy[0], 2).tolist()} "
++                    f"state={np.round(_s, 1).tolist() if _s is not None else None}",
++                    flush=True,
++                )
++
++            # Diagnostic only: LEROBOT_RESCALE_ACTIONS="lo,hi" linearly maps actions from the
++            # [-1, 1] range that a policy pretrained on another embodiment produces onto the
++            # target env's action range (e.g. "0,512" for pusht). Used to tell "the action space
++            # is incompatible" apart from "the policy picks the wrong direction".
++            _rescale = os.environ.get("LEROBOT_RESCALE_ACTIONS")
++            if _rescale:
++                _lo, _hi = (float(v) for v in _rescale.split(","))
++                action_numpy = np.clip(
++                    (action_numpy + 1.0) / 2.0 * (_hi - _lo) + _lo, _lo, _hi
++                )
++
+             # Apply the next action.
+             observation, reward, terminated, truncated, info = env.step(action_numpy)
+             if render_callback is not None:
+@@ -476,6 +513,7 @@ def eval_policy(
+     max_rewards = []
+     all_successes = []
+     all_seeds = []
++    all_done_steps = []
+     threads = []  # for video saving threads
+     n_episodes_rendered = 0  # for saving the correct number of videos
+ 
+@@ -564,6 +602,16 @@ def eval_policy(
+         max_rewards.extend(batch_max_rewards.tolist())
+         batch_successes = einops.reduce((rollout_data["success"] * mask), "b n -> b", "any")
+         all_successes.extend(batch_successes.tolist())
++        # Steps executed before the episode ended (done_index + 1). `done` fires on truncation as
++        # well as on termination, so an episode that ran out of budget reports the step limit --
++        # pair this with `success` to tell the two apart. -1 is only a safety net for a row that
++        # is never done. `done` is latched, so argmax over an all-False row returns 0, hence the
++        # any() check before trusting the index.
++        batch_has_done = rollout_data["done"].any(dim=1).tolist()
++        all_done_steps.extend(
++            int(idx) + 1 if bool(has) else -1
++            for idx, has in zip(done_indices.tolist(), batch_has_done, strict=True)
++        )
+         if seeds:
+             all_seeds.extend(seeds)
+         else:
+@@ -649,6 +697,7 @@ def eval_policy(
+         thread.join()
+ 
+     # Compile eval info.
++    _completed_steps = [s for s in all_done_steps[:n_episodes] if s > 0]
+     info = {
+         "per_episode": [
+             {
+@@ -657,13 +706,15 @@ def eval_policy(
+                 "max_reward": max_reward,
+                 "success": success,
+                 "seed": seed,
++                "done_steps": done_steps,
+             }
+-            for i, (sum_reward, max_reward, success, seed) in enumerate(
++            for i, (sum_reward, max_reward, success, seed, done_steps) in enumerate(
+                 zip(
+                     sum_rewards[:n_episodes],
+                     max_rewards[:n_episodes],
+                     all_successes[:n_episodes],
+                     all_seeds[:n_episodes],
++                    all_done_steps[:n_episodes],
+                     strict=True,
+                 )
+             )
+@@ -672,6 +723,7 @@ def eval_policy(
+             "avg_sum_reward": float(np.nanmean(sum_rewards[:n_episodes])),
+             "avg_max_reward": float(np.nanmean(max_rewards[:n_episodes])),
+             "pc_success": float(np.nanmean(all_successes[:n_episodes]) * 100),
++            "mean_done_steps": float(np.mean(_completed_steps)) if _completed_steps else float("nan"),
+             "eval_s": time.time() - start,
+             "eval_ep_s": (time.time() - start) / n_episodes,
+         },
+@@ -743,7 +795,14 @@ def eval_main(cfg: EvalPipelineConfig):
+     # Check device is available
+     device = get_safe_torch_device(cfg.policy.device, log=True)
+ 
+-    torch.backends.cudnn.benchmark = True
++    # Deterministic evaluation. cudnn.benchmark lets cuDNN pick convolution algorithms by
++    # timing them, and the winner differs from process to process; different algorithms
++    # round differently, and pusht's contact nonlinearity amplifies that into different
++    # outcomes. Measured 2026-10-20: the same config and seed run twice gave different
++    # per-episode sum_rewards (ep0: 197.30 vs 63.91) and even flipped ep2's success.
++    # Without this, no two eval runs are comparable, seeded or not.
++    torch.backends.cudnn.benchmark = False
++    torch.backends.cudnn.deterministic = True
+     torch.backends.cuda.matmul.allow_tf32 = True
+     set_seed(cfg.seed)
+ 
+@@ -783,7 +842,11 @@ def eval_main(cfg: EvalPipelineConfig):
+     env_preprocessor, env_postprocessor = make_env_pre_post_processors(env_cfg=cfg.env, policy_cfg=cfg.policy)
+ 
+     recording_dir = Path(cfg.output_dir) / "recordings" if cfg.eval.recording else None
+-    max_episodes_rendered = 0 if cfg.eval.recording else 10
++    # Default 10; set LEROBOT_EVAL_MAX_VIDEOS to render more (handy when the failures you want
++    # to watch are not in the first ten episodes).
++    max_episodes_rendered = (
++        0 if cfg.eval.recording else int(os.environ.get("LEROBOT_EVAL_MAX_VIDEOS", "10"))
++    )
+     videos_dir = None if cfg.eval.recording else Path(cfg.output_dir) / "videos"
+ 
+     with torch.no_grad(), torch.autocast(device_type=device.type) if cfg.policy.use_amp else nullcontext():
+@@ -827,6 +890,7 @@ class TaskMetrics(TypedDict):
+     sum_rewards: list[float]
+     max_rewards: list[float]
+     successes: list[bool]
++    done_steps: list[int]
+     video_paths: list[str]
+     predicted_video_paths: list[str]
+ 
+@@ -879,6 +943,7 @@ def eval_one(
+         sum_rewards=[ep["sum_reward"] for ep in per_episode],
+         max_rewards=[ep["max_reward"] for ep in per_episode],
+         successes=[ep["success"] for ep in per_episode],
++        done_steps=[ep["done_steps"] for ep in per_episode],
+         video_paths=task_result.get("video_paths", []),
+         predicted_video_paths=task_result.get("predicted_video_paths", []),
+     )

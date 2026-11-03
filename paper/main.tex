@@ -1,0 +1,432 @@
+% !TEX program = pdflatex
+% arXiv preprint draft.  Compile on Overleaf: New Project -> Upload -> this file.
+% Packages are all standard; no bibliography file needed (references inlined).
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{times}
+
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+
+\title{One Config Value, Thirty Points:\\
+Configuration Defaults and the Reproducibility of a\\
+Robot Learning Benchmark}
+\author{Yandong Huang\\
+\small \todo{affiliation / contact}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Reproducing published results in robot learning is routinely difficult, yet
+\emph{how much} a reproduction is off and \emph{why} usually remain anecdotal.
+Taking one widely used open-source stack (LeRobot v0.6.1) and its reference task
+(PushT), we use a $2\times2$ factorial design with 200 paired rollouts per cell to
+decompose the gap between the published success rate (65.4\%) and what the library
+yields out of the box (33.0\%). A single configuration field, \texttt{crop\_shape},
+accounts for the dominant share: enabling it alone raises success from 33.0\% to
+55.0\% ($+22.0$ pp, $p<0.0001$), and with the remaining official defaults the cell
+reaches 63.5\%. GroupNorm together with random backbone initialization contributes
+only $+2.0$ pp on its own ($p=0.36$). Three separate experiments show that training
+budget is not the lever: $2\times$, $5\times$ and $6\times$ more optimization
+produce no measurable gain. We further measure the evaluation noise floor with
+eleven disjoint blocks of 50 initial states: the observed block-to-block spread
+($\pm6.0$ pp) matches the binomial prediction ($\pm6.2$ pp; $\chi^2=9.4$, df$=10$,
+$p=0.50$), so uncertainty is fully accounted for by sample size alone. Finally, the
+same configuration choice is enough to move a method comparison from
+indistinguishable ($p=0.51$) to decisive ($p<0.0001$), which suggests that
+configurations must be reconciled before any cross-method claim is made.
+Taken together, the measurements yield a cost-normalized ordering of
+interventions: the two largest gains we can produce come from changes that cost no
+additional compute at all, while the only compute-expensive option we test is
+measurably ineffective.
+\end{abstract}
+
+\section{Introduction}
+
+A practitioner who installs an open-source robot learning library and trains the
+reference policy on the reference task expects to land near the published number.
+In our case they do not: the published Diffusion Policy result on PushT is 65.4\%
+\cite{lerobot-dp}, whereas the same library with its shipped defaults yields
+33.0\% --- a gap of roughly thirty percentage points, with a training loss that
+looks entirely healthy.
+
+The natural first hypotheses are (i) insufficient training, (ii) insufficient data,
+and (iii) a bug. We test the first directly and reject it; the second is bounded by
+prior work; and the third turns out to be the wrong frame: no line of code is
+incorrect. What differs is which of the library's configuration fields are set,
+and the library neither reports nor warns about the consequences.
+
+This paper makes four contributions:
+\begin{enumerate}
+  \item A $2\times2$ factorial decomposition of a 30-point reproduction gap at 200
+        paired rollouts per cell, attributing it primarily to one configuration
+        field (\S\ref{sec:factorial}).
+  \item Three independent demonstrations that training budget is not the lever
+        (\S\ref{sec:budget}).
+  \item The first measured evaluation noise floor for this benchmark: eleven
+        disjoint seed blocks, with overdispersion formally tested
+        (\S\ref{sec:noise}).
+  \item Evidence that the same configuration choice flips the statistical
+        conclusion of a method comparison (\S\ref{sec:method}).
+  \item A cost-normalized ordering of interventions and a five-step diagnostic
+        protocol for failed reproductions (\S\ref{sec:where}, \S\ref{sec:protocol}).
+\end{enumerate}
+We do not claim that any method is better than another; we claim that the
+measurement is configuration-dependent in a way that is currently unreported.
+
+\section{Related Work}
+
+\textbf{Benchmark construction.} RLBench \cite{rlbench} and REPLAB
+\cite{replab} standardize tasks and hardware respectively. Neither studies how
+the \emph{software configuration} of a policy affects measured performance.
+
+\textbf{Reproducibility frameworks.} MIRRER \cite{mirrer} proposes a conceptual
+framework for iterated, reproduced and replicated experiments and states that a
+first step is ``simply reporting the resulting performance metrics from several
+iterated and reproduced experiments and calculating the variance between them.''
+To our knowledge this measurement has not been reported for a VLA-style policy.
+RB2 \cite{rb2} quantifies a 20\% change when the same experiment is run in two
+different \emph{physical} laboratories and proposes local relative ranking. Our
+setting has zero physical variation --- one machine, one room, identical hardware
+--- and still exhibits a larger shift.
+
+\textbf{Statistical evaluation.} STEP \cite{step} addresses how many trials are
+needed to compare two policies in the 10--50 trial regime. Such tests presuppose
+that the two measurements were taken under comparable conditions. Our results
+indicate this presupposition can fail even within a single library and a single
+machine. Observation-contract auditing \cite{obscontract} detects, statically from
+source, silent loss of state fields across observation pathways. Our mismatch is of
+a different kind: no field is lost and no code path is defective, so a static
+contract audit would report both configurations as valid.
+
+\textbf{Action chunking.} The effectiveness of action chunking in imitation
+learning is acknowledged to lack a complete explanation \cite{qchunk}. We provide a
+cross-architecture characterization of one of its knobs, the number of actions
+executed open-loop (\S\ref{sec:na}).
+
+\section{Experimental Setup}
+\label{sec:setup}
+
+\textbf{Stack.} LeRobot v0.6.1 with four local source patches (see the
+reproducibility statement). Training and evaluation run on a single consumer GPU
+(RTX 4060 Laptop, 8~GiB).
+
+\textbf{Task and data.} \texttt{lerobot/pusht}: 206 demonstrations, 25650 frames,
+$96\times96$ images. Success is defined by the environment as polygon coverage
+above $0.95$; the reported reward is $\mathrm{clip}(\text{coverage}/0.95, 0, 1)$,
+so reward saturates at 1.0 exactly at the success threshold.
+
+\textbf{Evaluation protocol.} 200 episodes, 300-step horizon,
+\texttt{n\_action\_steps}$\,=8$ for Diffusion Policy, a fixed evaluation seed, and
+22 synchronous environments. Consecutive evaluations with the same seed share the
+same initial states, so all comparisons reported here are \emph{paired}; we use the
+exact McNemar test on discordant pairs and Wilson intervals for marginal rates.
+
+\textbf{Determinism.} Two library behaviours had to be neutralized before any
+comparison was meaningful: cuDNN autotuning (\texttt{cudnn.benchmark}) selected
+different convolution algorithms per process, producing episode-level reward
+differences of $197.30$ versus $63.91$ for an identical configuration and seed;
+and action sampling drew from a global RNG whose state carried over between
+evaluation batches. Both are patched. With the patches, two independent evaluations
+of the same checkpoint are bit-identical.
+
+\textbf{Design.} Four training runs share dataset, batch size (64), step count
+(120k), horizon, and training seed; they differ only in whether \texttt{crop\_shape}
+is $[84,84]$ and whether GroupNorm is enabled together with randomly initialized
+backbone weights (the two are bound in code and cannot be separated).
+
+\section{Results}
+
+\subsection{A single field carries the gap}
+\label{sec:factorial}
+
+\begin{table}[t]
+\centering
+\caption{Success rate (\%), 200 episodes per cell, paired initial states.
+Wilson 95\% intervals in brackets.}
+\label{tab:factorial}
+\begin{tabular}{lcc}
+\toprule
+ & crop off & crop on \\
+\midrule
+GroupNorm off (ImageNet backbone) & 33.0 [26.9, 39.8] & 55.0 [48.1, 61.7] \\
+GroupNorm on (random backbone)    & 28.5 [22.7, 35.1] & \textbf{63.5} [56.6, 69.9] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:factorial} reports the $2\times2$. Main effects are $+2.0$ pp for
+GroupNorm with a random backbone and $+28.5$ pp for \texttt{crop\_shape}; the
+interaction is $+13.0$ pp with a bootstrap 95\% interval of $[+0.0, +25.5]$,
+i.e.\ marginal. Paired McNemar tests (Table~\ref{tab:paired}) confirm that both
+crop contrasts are decisive while neither GroupNorm contrast is.
+
+\begin{table}[t]
+\centering
+\caption{Paired exact McNemar tests over 200 shared initial states.}
+\label{tab:paired}
+\begin{tabular}{lccc}
+\toprule
+Contrast & only first succeeds & only second succeeds & $p$ \\
+\midrule
+crop effect, GroupNorm off & 27 & 71 & $<0.0001$ \\
+crop effect, GroupNorm on  & 20 & 90 & $<0.0001$ \\
+GroupNorm effect, crop off & 43 & 34 & 0.362 \\
+GroupNorm effect, crop on  & 34 & 51 & 0.082 \\
+default $\rightarrow$ full recipe & 20 & 81 & $<0.0001$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two consequences follow. First, the configuration field that separates a 33.0\%
+measurement from the published 65.4\% is one whose effect is invisible in the
+training loss. Second, restoring \emph{any single} official value is insufficient:
+crop alone is necessary and largely sufficient, but the full recipe reaches
+63.5\%, statistically indistinguishable from the published figure measured over 500
+episodes.
+
+\textbf{An upstream fix that misses this field.} The library's default for the
+image encoder and for GroupNorm was changed in a merged pull request in May 2026,
+whose motivation was that the defaults were ``designed for the easier PushT task''
+\cite{pr3202}. \texttt{crop\_shape} was not among the changed fields, yet it is the
+dominant factor here.
+
+\subsection{Training budget is not the lever}
+\label{sec:budget}
+
+\begin{table}[t]
+\centering
+\caption{Success rate (\%) at two training budgets, 200 episodes each.}
+\label{tab:budget}
+\begin{tabular}{lcc}
+\toprule
+Cell & 60k steps & 120k steps \\
+\midrule
+default            & 31.0 (62/200) & 33.0 (66/200) \\
+GroupNorm only     & 26.5 (53/200) & 28.5 (57/200) \\
+crop only          & 55.0 (110/200) & 55.0 (110/200) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:budget} compares two training budgets at matched evaluation. The
+crop-only cell produces \emph{exactly} the same number of successes at both budgets
+(110/200). Two further observations point the same way: the full-recipe cell is
+non-monotonic across five checkpoints (42.0, 48.0, 62.0, 48.0, 64.0\%) and flat
+within the $\pm13$ pp interval of a 50-episode evaluation; and an ACT policy
+trained for $6\times$ longer (0.8M $\rightarrow$ 4.8M samples) moves from 27.0\% to
+29.5\% (31 vs 36 discordant, $p=0.63$). Three model families, three budget
+multipliers, no measurable gain.
+
+\subsection{The evaluation noise floor}
+\label{sec:noise}
+
+Eleven disjoint blocks of 50 initial states, same checkpoint and identical
+configuration, give success rates of 28, 32, 18, 14, 28, 28, 18, 28, 28, 30 and
+30\%. The block-to-block standard deviation is $\pm6.0$ pp against a binomial
+prediction of $\pm6.2$ pp (ratio $0.97$); a $\chi^2$ overdispersion test gives
+$\chi^2=9.4$ with df$=10$ ($p=0.50$). There is no evidence of extra-binomial
+variance: at $n=50$, uncertainty is entirely attributable to sample size. This is,
+to our knowledge, the measurement called for by \cite{mirrer} but not previously
+reported, and it justifies the use of binomial / Wilson intervals throughout.
+
+\subsection{What this does to a method comparison}
+\label{sec:method}
+
+Holding the evaluation protocol fixed, we compare ACT (100k and 200k training
+steps) against Diffusion Policy under two configurations. With the library
+defaults, DP at 33.0\% and ACT at 29.5\% are indistinguishable (37 vs 44
+discordant, $p=0.51$). With the official recipe, DP at 63.5\% dominates (13 vs 81,
+$p<0.0001$). The configuration choice alone moves the comparison from a null result
+to a decisive one.
+
+We emphasize what this does \emph{not} establish. The ACT policy was not
+configuration-tuned: ACT has no official PushT recipe to restore, so we cannot
+exclude that a better-configured ACT would perform differently. The claim is
+therefore not about the relative merit of the two methods, but about the fragility
+of the comparison itself.
+
+\subsection{Receding-horizon length across architectures}
+\label{sec:na}
+
+For ACT, the number of actions executed before replanning has a sharp interior
+optimum: success is 0, 6, 4, 12, 10, \textbf{28}, 22, 4 and 0\% for
+\texttt{n\_action\_steps} of 1, 2, 4, 6, 8, 10, 20, 50 and 100 respectively
+(50 episodes each). For SmolVLA, tuned on the same data, the ordering is 2\% at
+\texttt{n}=50, 14\% at 20, and 24\% at both 10 and 5; the 24\% vs 2\% contrast is
+12:1 under a paired test ($p=0.0034$). The optimal open-loop horizon is 5--10
+actions in both cases even though the prediction horizons (100 and 50) and model
+sizes (80M and 450M) differ by a factor of five, which suggests the quantity is set
+by the task's temporal scale rather than by the architecture.
+\todo{These two sweeps use 50 episodes; re-run at 200 for a uniform protocol.}
+
+\section{Where to Spend: A Cost-Normalized View}
+\label{sec:where}
+
+Because every quantity in this paper was measured under a fixed compute budget, we
+can order the interventions by what they buy per unit of compute
+(Table~\ref{tab:cost}). The ordering is stark.
+
+\begin{table}[t]
+\centering
+\caption{Interventions measured in this study, ordered by cost. ``n.s.'' marks a
+difference that did not reach significance. All figures are from the same task and
+hardware; they are a ranking within this study, not a universal law.}
+\label{tab:cost}
+\begin{tabular}{p{4.6cm}cp{2.2cm}p{3.6cm}}
+\toprule
+Intervention & $\Delta$ success & Extra GPU-h & Nature of change \\
+\midrule
+\texttt{n\_action\_steps} 50$\rightarrow$10 (SmolVLA) & $+22$ pp & 0 & inference-time \\
+\texttt{n\_action\_steps} 1$\rightarrow$10 (ACT)      & $+28$ pp & 0 & inference-time \\
+\texttt{crop\_shape} none$\rightarrow[84,84]$         & $+22$ pp & 0 & configuration \\
+episode budget 300$\rightarrow$600                     & $+32$ pp & 0 & task definition \\
+\midrule
+training $\times2$ (DP, 60k$\rightarrow$120k)          & $+2.0$ pp (n.s.) & $+7.3$ & optimization \\
+training $\times6$ (ACT, 0.8M$\rightarrow$4.8M)        & $+2.5$ pp (n.s.) & $+10$ & optimization \\
+\midrule
+dataset reduced to $1/4$                               & $-24$ pp & --- & data \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The two largest gains that survive scrutiny are obtained by changing a value in a
+configuration file or an inference-time parameter. Neither costs a single
+additional GPU-hour. The one intervention that does cost compute --- longer
+optimization --- produces differences that our sample sizes cannot distinguish from
+zero, at two different multipliers and in two different model families.
+
+We deliberately exclude the 300$\rightarrow$600 episode result from the ``gain''
+column even though it is the largest number in the table: raising the horizon
+changes the task definition, so the resulting success rate is not comparable to the
+published 300-step protocol. It is nevertheless informative: a third of the failures
+at the standard horizon are cases the policy could have solved given more steps,
+which is itself an argument that the reported number is protocol-dependent.
+
+\section{A Diagnostic Protocol for Failed Reproductions}
+\label{sec:protocol}
+
+The steps below are the ones that actually located our gap, ordered by the ratio of
+information gained to time spent. Each addresses a specific symptom.
+
+\begin{enumerate}
+  \item \textbf{Establish determinism before trusting any comparison.} Evaluate the
+        same checkpoint twice with identical settings. If the numbers differ, the
+        comparison machinery is broken and no configuration study is meaningful.
+        In our stack this required disabling cuDNN autotuning and re-seeding the
+        action-sampling RNG once per evaluation batch.
+  \item \textbf{Verify the metric, not just the number.} Confirm whether the
+        reported quantity is a thresholded success indicator or a clipped continuous
+        score; the two are not monotonically recoverable from one another, and a
+        saturating score can rank methods differently from the success rate.
+  \item \textbf{Diff configurations against the reference artifact.} Field-by-field
+        comparison of the stored training configuration against the published
+        checkpoint's configuration located all four discrepancies in this study.
+        Visual inspection of two YAML files does not scale; a sorted diff does.
+  \item \textbf{Use a factorial rather than one-factor-at-a-time.} A single-factor
+        sweep would have concluded that the normalization change was useless (it
+        costs 4.5 pp on its own) and stopped. The $2\times2$ revealed that the
+        effect of the input crop depends on the normalization choice.
+  \item \textbf{Pair the evaluations and report $n$ with an interval.} Reusing the
+        same initial states across configurations multiplies the sensitivity of the
+        comparison; reporting a bare success rate with $n=50$ hides a $\pm12$ pp
+        interval that is larger than most claimed improvements.
+\end{enumerate}
+
+\section{Discussion}
+
+The distinction that matters is between two kinds of mismatch. An
+\emph{implementation defect} loses or reorders information: a field is dropped, a
+key is resorted, a code path is skipped. Such defects are in principle detectable
+without running anything, and a static contract audit \cite{obscontract} is the
+right tool for them. A \emph{convention mismatch} is different in kind: both
+configurations are legal, both train to a healthy loss, neither loses information,
+and a static audit would pass both. What fails is the comparison against a
+reference produced under the other convention.
+
+This is why the gap we measure cannot be found by inspection. It can only be found
+by knowing which reference one intends to reproduce, recovering that reference's
+configuration, and measuring the difference under a paired protocol. The first two
+are bookkeeping; the third is statistical. The protocol in \S\ref{sec:protocol} is
+an attempt to make all three routine, and the cost table in \S\ref{sec:where} is an
+argument for doing them before spending compute.
+
+\section{Limitations}
+
+\textbf{Single task, simulation only.} All experiments use PushT. Generalization to
+other environments is untested and is the most important open question.
+
+\textbf{One training seed.} The factorial is replicated across two training budgets
+but not yet across training seeds.
+\todo{a second training seed is running; report when available.}
+
+\textbf{ACT was not configuration-tuned}, as discussed in \S\ref{sec:method}.
+
+\textbf{The reproduction target is a single published number} for a single
+checkpoint, and its own value (65.4\%) was measured with 500 episodes and a
+175k-step checkpoint.
+
+\section{Reproducibility Statement}
+
+All training and evaluation scripts, the raw per-episode results for 65 evaluation
+runs, the exported source patches, and the result tables are available at
+\url{https://github.com/JacksonHYD/vla-pusht-repro-artifact}. Model weights are
+archived at \url{https://huggingface.co/JacksonHYD/pusht-repro-checkpoints}. The
+four source patches (deterministic convolution, per-batch RNG seeding, state-less
+ACT, per-episode step recording) are provided as a \texttt{.patch} file against
+LeRobot commit \texttt{7e241bd6}; without them the numbers below are not
+reproducible.
+
+\begin{thebibliography}{99}
+
+\bibitem{lerobot-dp}
+LeRobot. \emph{diffusion\_pusht} model card, huggingface.co/lerobot/diffusion\_pusht.
+Reports 65.4\% success over 500 episodes at the 175k-step checkpoint.
+
+\bibitem{lerobot}
+LeRobot: An Open-Source Library for End-to-End Robot Learning. arXiv, 2026.
+
+\bibitem{rlbench}
+S.~James, Z.~Ma, D.~R.~Arrojo, A.~J.~Davison.
+RLBench: The Robot Learning Benchmark \& Learning Environment. arXiv:1909.12271, 2019.
+
+\bibitem{replab}
+B.~Yang, J.~Zhang, V.~Pong, S.~Levine, D.~Jayaraman.
+REPLAB: A Reproducible Low-Cost Arm Benchmark Platform for Robotic Learning.
+ICRA 2019. arXiv:1905.07447.
+
+\bibitem{mirrer}
+A.~Norton, B.~Flynn.
+Towards Using Multiple Iterated, Reproduced, and Replicated Experiments with Robots
+(MIRRER) for Evaluation and Benchmarking. arXiv:2408.04736, 2024.
+
+\bibitem{rb2}
+S.~Dasari et al.
+RB2: Robotic Manipulation Benchmarking with a Twist. arXiv:2203.08098, 2022.
+
+\bibitem{step}
+D.~Snyder et al.
+Is Your Imitation Learning Policy Better than Mine? Policy Comparison with
+Near-Optimal Stopping. arXiv:2503.10966, 2025.
+
+\bibitem{obscontract}
+Observation-contract auditing for valid modality comparison in robot manipulation
+benchmarks. \emph{Scientific Reports}, 2026. doi:10.1038/s41598-026-76821-1.
+
+\bibitem{qchunk}
+Q.~Li, Z.~Zhou, S.~Levine.
+Reinforcement Learning with Action Chunking. NeurIPS 2025. arXiv:2507.07969.
+
+\bibitem{pr3202}
+huggingface/lerobot pull request \#3202, ``feat(policy): use pretrained vision
+encoder weights by default for diffusion and vqbet'', merged 2026-05-07.
+
+\end{thebibliography}
+
+\end{document}

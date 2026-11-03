@@ -1,0 +1,101 @@
+{
+  "per_task": [
+    {
+      "task_group": "pusht",
+      "task_id": 0,
+      "metrics": {
+        "sum_rewards": [
+          101.39345021599544,
+          0.0,
+          112.03070872326869,
+          170.2676989415362,
+          9.439270282220974,
+          81.87250596252525,
+          173.25849042595888,
+          193.3072750543655,
+          147.92158867094753,
+          116.15621444520966
+        ],
+        "max_rewards": [
+          1.0,
+          0.0,
+          0.89894883123267,
+          0.9642344950155667,
+          0.3459205513363193,
+          1.0,
+          0.9950473899131328,
+          0.9412551992121642,
+          0.971467833938149,
+          0.9718403163539513
+        ],
+        "successes": [
+          true,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false
+        ],
+        "video_paths": [
+          "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_0.mp4",
+          "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_1.mp4",
+          "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_2.mp4",
+          "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_3.mp4",
+          "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_4.mp4",
+          "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_5.mp4",
+          "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_6.mp4",
+          "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_7.mp4",
+          "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_8.mp4",
+          "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_9.mp4"
+        ],
+        "predicted_video_paths": []
+      }
+    }
+  ],
+  "per_group": {
+    "pusht": {
+      "avg_sum_reward": 110.56472027220279,
+      "avg_max_reward": 0.8088714617001953,
+      "pc_success": 20.0,
+      "n_episodes": 10,
+      "video_paths": [
+        "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_0.mp4",
+        "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_1.mp4",
+        "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_2.mp4",
+        "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_3.mp4",
+        "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_4.mp4",
+        "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_5.mp4",
+        "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_6.mp4",
+        "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_7.mp4",
+        "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_8.mp4",
+        "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_9.mp4"
+      ],
+      "predicted_video_paths": []
+    }
+  },
+  "overall": {
+    "avg_sum_reward": 110.56472027220279,
+    "avg_max_reward": 0.8088714617001953,
+    "pc_success": 20.0,
+    "n_episodes": 10,
+    "eval_s": 578.1137764453888,
+    "eval_ep_s": 57.81137769222259,
+    "video_paths": [
+      "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_0.mp4",
+      "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_1.mp4",
+      "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_2.mp4",
+      "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_3.mp4",
+      "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_4.mp4",
+      "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_5.mp4",
+      "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_6.mp4",
+      "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_7.mp4",
+      "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_8.mp4",
+      "/mnt/f/vla/outputs/eval/pre_pin_300/videos/pusht_0/eval_episode_9.mp4"
+    ],
+    "predicted_video_paths": []
+  }
+}

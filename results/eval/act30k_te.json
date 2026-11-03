@@ -1,0 +1,131 @@
+{
+  "per_task": [
+    {
+      "task_group": "pusht",
+      "task_id": 0,
+      "metrics": {
+        "sum_rewards": [
+          0.834716007338617,
+          0.0,
+          15.93887136791076,
+          55.06706297860771,
+          47.228575640893304,
+          0.0,
+          22.667067596209957,
+          0.0,
+          1.0397459900059567,
+          38.90674146476934,
+          66.17452740875285,
+          10.378580195193983,
+          42.92620676172136,
+          8.476621986165885,
+          12.100557910447566,
+          76.55986927073839,
+          72.80103450221911,
+          7.419010296622478,
+          43.81913297652537,
+          2.744479290380908
+        ],
+        "max_rewards": [
+          0.028719422420511148,
+          0.0,
+          0.40319201161907225,
+          0.2731400596532254,
+          0.39813781058930553,
+          0.0,
+          0.423554945352193,
+          0.0,
+          0.08342176216855976,
+          0.47222130161492076,
+          0.5733913276387885,
+          0.19465660250673017,
+          0.6899736152608674,
+          0.17335619471180702,
+          0.41816580454394275,
+          0.3865373065446302,
+          0.42204105879805176,
+          0.39820618462383395,
+          0.45825832685109263,
+          0.198197277866448
+        ],
+        "successes": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "video_paths": [
+          "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_0.mp4",
+          "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_1.mp4",
+          "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_2.mp4",
+          "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_3.mp4",
+          "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_4.mp4",
+          "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_5.mp4",
+          "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_6.mp4",
+          "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_7.mp4",
+          "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_8.mp4",
+          "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_9.mp4"
+        ],
+        "predicted_video_paths": []
+      }
+    }
+  ],
+  "per_group": {
+    "pusht": {
+      "avg_sum_reward": 26.254140082225184,
+      "avg_max_reward": 0.299758550638199,
+      "pc_success": 0.0,
+      "n_episodes": 20,
+      "video_paths": [
+        "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_0.mp4",
+        "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_1.mp4",
+        "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_2.mp4",
+        "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_3.mp4",
+        "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_4.mp4",
+        "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_5.mp4",
+        "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_6.mp4",
+        "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_7.mp4",
+        "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_8.mp4",
+        "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_9.mp4"
+      ],
+      "predicted_video_paths": []
+    }
+  },
+  "overall": {
+    "avg_sum_reward": 26.254140082225184,
+    "avg_max_reward": 0.299758550638199,
+    "pc_success": 0.0,
+    "n_episodes": 20,
+    "eval_s": 83.56298422813416,
+    "eval_ep_s": 4.178149235248566,
+    "video_paths": [
+      "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_0.mp4",
+      "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_1.mp4",
+      "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_2.mp4",
+      "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_3.mp4",
+      "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_4.mp4",
+      "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_5.mp4",
+      "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_6.mp4",
+      "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_7.mp4",
+      "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_8.mp4",
+      "/mnt/f/vla/outputs/eval/act30k_te/videos/pusht_0/eval_episode_9.mp4"
+    ],
+    "predicted_video_paths": []
+  }
+}

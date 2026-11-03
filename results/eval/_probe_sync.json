@@ -1,0 +1,71 @@
+{
+  "per_task": [
+    {
+      "task_group": "pusht",
+      "task_id": 0,
+      "metrics": {
+        "sum_rewards": [
+          188.07677185256597,
+          63.95694552086842,
+          175.96988326729485,
+          252.4208524474627
+        ],
+        "max_rewards": [
+          0.9948933429622926,
+          1.0,
+          0.9916009480615758,
+          0.9700639742883678
+        ],
+        "successes": [
+          false,
+          true,
+          false,
+          false
+        ],
+        "done_steps": [
+          300,
+          192,
+          300,
+          300
+        ],
+        "video_paths": [
+          "/mnt/f/vla/outputs/eval/_probe_sync/videos/pusht_0/eval_episode_0.mp4",
+          "/mnt/f/vla/outputs/eval/_probe_sync/videos/pusht_0/eval_episode_1.mp4",
+          "/mnt/f/vla/outputs/eval/_probe_sync/videos/pusht_0/eval_episode_2.mp4",
+          "/mnt/f/vla/outputs/eval/_probe_sync/videos/pusht_0/eval_episode_3.mp4"
+        ],
+        "predicted_video_paths": []
+      }
+    }
+  ],
+  "per_group": {
+    "pusht": {
+      "avg_sum_reward": 170.106113272048,
+      "avg_max_reward": 0.9891395663280591,
+      "pc_success": 25.0,
+      "n_episodes": 4,
+      "video_paths": [
+        "/mnt/f/vla/outputs/eval/_probe_sync/videos/pusht_0/eval_episode_0.mp4",
+        "/mnt/f/vla/outputs/eval/_probe_sync/videos/pusht_0/eval_episode_1.mp4",
+        "/mnt/f/vla/outputs/eval/_probe_sync/videos/pusht_0/eval_episode_2.mp4",
+        "/mnt/f/vla/outputs/eval/_probe_sync/videos/pusht_0/eval_episode_3.mp4"
+      ],
+      "predicted_video_paths": []
+    }
+  },
+  "overall": {
+    "avg_sum_reward": 170.106113272048,
+    "avg_max_reward": 0.9891395663280591,
+    "pc_success": 25.0,
+    "n_episodes": 4,
+    "eval_s": 86.83370184898376,
+    "eval_ep_s": 21.70842558145523,
+    "video_paths": [
+      "/mnt/f/vla/outputs/eval/_probe_sync/videos/pusht_0/eval_episode_0.mp4",
+      "/mnt/f/vla/outputs/eval/_probe_sync/videos/pusht_0/eval_episode_1.mp4",
+      "/mnt/f/vla/outputs/eval/_probe_sync/videos/pusht_0/eval_episode_2.mp4",
+      "/mnt/f/vla/outputs/eval/_probe_sync/videos/pusht_0/eval_episode_3.mp4"
+    ],
+    "predicted_video_paths": []
+  }
+}
