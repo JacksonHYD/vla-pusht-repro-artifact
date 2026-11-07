@@ -1,0 +1,46 @@
+{
+  "title": "PushT reproduction artifact: configuration, compute and sampling in a robot learning benchmark",
+  "description": "<p>Code, per-episode evaluation results, and source patches for a study of how much of a reported success rate is attributable to the policy configuration rather than to the method or to the training budget.</p><p>Contents: 65+ evaluation runs of Diffusion Policy, ACT and SmolVLA on the PushT benchmark (200 episodes each, paired initial states); the 2x2 factorial over <code>crop_shape</code> and GroupNorm/backbone initialisation; eleven disjoint 50-episode seed blocks used to measure the evaluation noise floor; training seeds for the variance decomposition; four patches against LeRobot v0.6.1 that make evaluation deterministic and per-episode results auditable.</p><p>Model weights are archived separately (see related identifiers). The manuscript is included under <code>paper/</code>.</p>",
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "cc-by-4.0",
+  "version": "1.0.0",
+  "language": "eng",
+  "creators": [
+    {
+      "name": "Huang, Yandong",
+      "affiliation": "Beijing Information Science and Technology University"
+    }
+  ],
+  "keywords": [
+    "reproducibility",
+    "benchmark evaluation",
+    "robot learning",
+    "imitation learning",
+    "diffusion policy",
+    "variance decomposition",
+    "LeRobot",
+    "PushT"
+  ],
+  "related_identifiers": [
+    {
+      "relation": "isPartOf",
+      "scheme": "url",
+      "identifier": "https://github.com/JacksonHYD/vla-pusht-repro-artifact",
+      "resource_type": "software"
+    },
+    {
+      "relation": "isSupplementedBy",
+      "scheme": "url",
+      "identifier": "https://huggingface.co/JacksonHYD/pusht-repro-checkpoints",
+      "resource_type": "model"
+    },
+    {
+      "relation": "references",
+      "scheme": "url",
+      "identifier": "https://github.com/huggingface/lerobot",
+      "resource_type": "software"
+    }
+  ],
+  "notes": "Evaluation protocol: 200 episodes, 300-step horizon, fixed evaluation seed, 22 synchronous environments. All comparisons are paired on the same 200 initial states."
+}

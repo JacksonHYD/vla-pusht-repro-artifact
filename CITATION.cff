@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this artifact or its results, please cite it as below."
+title: "PushT reproduction artifact: configuration, compute and sampling in a robot learning benchmark"
+type: software
+version: 1.0.0
+date-released: 2026-11-07
+license: CC-BY-4.0
+repository-code: "https://github.com/JacksonHYD/vla-pusht-repro-artifact"
+abstract: >-
+  Code, per-episode evaluation results and source patches for a study of how much
+  of a reported success rate in robot learning is attributable to policy
+  configuration rather than to the method or the training budget. The artifact
+  contains 200-episode paired evaluations of Diffusion Policy, ACT and SmolVLA on
+  PushT, a 2x2 factorial over input cropping and backbone initialisation, eleven
+  disjoint seed blocks measuring the evaluation noise floor, and patches against
+  LeRobot v0.6.1 that make evaluation deterministic and per-episode results
+  auditable. Model weights are archived separately.
+authors:
+  - family-names: Huang
+    given-names: Yandong
+    affiliation: "Beijing Information Science and Technology University"
+keywords:
+  - reproducibility
+  - benchmark evaluation
+  - robot learning
+  - imitation learning
+  - variance decomposition
+  - LeRobot
+  - PushT
