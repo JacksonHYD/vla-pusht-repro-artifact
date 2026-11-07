@@ -1,6 +1,6 @@
 # What a Success Rate Measures — artifact
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24034428.svg)](https://doi.org/10.5281/zenodo.24034428)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24034427.svg)](https://doi.org/10.5281/zenodo.24034427)
 
 Code, raw results and source patches for the paper *"What a Success Rate Measures:
 Configuration, Compute and Sampling in a Robot Learning Benchmark"*.
@@ -42,8 +42,8 @@ initial states.
   year      = {2026},
   publisher = {Zenodo},
   version   = {v1.0.0},
-  doi       = {10.5281/zenodo.24034428},
-  url       = {https://doi.org/10.5281/zenodo.24034428}
+  doi       = {10.5281/zenodo.24034427},
+  url       = {https://doi.org/10.5281/zenodo.24034427}
 }
 ```
 

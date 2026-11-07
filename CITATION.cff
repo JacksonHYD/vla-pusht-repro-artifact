@@ -5,7 +5,7 @@ type: software
 version: 1.0.0
 date-released: 2026-11-07
 license: CC-BY-4.0
-doi: 10.5281/zenodo.24034428
+doi: 10.5281/zenodo.24034427
 repository-code: "https://github.com/JacksonHYD/vla-pusht-repro-artifact"
 abstract: >-
   Code, per-episode evaluation results and source patches for a study of how much
