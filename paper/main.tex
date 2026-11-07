@@ -4,16 +4,21 @@
 \documentclass[11pt]{article}
 \usepackage[margin=1in]{geometry}
 \usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{caption}
 \usepackage{booktabs}
 \usepackage{array}
-\usepackage{hyperref}
+\PassOptionsToPackage{hyphens}{url}   % let long repository URLs break at hyphens
+\usepackage[hidelinks]{hyperref}
 \usepackage{xcolor}
-\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext}
+\usepackage{newtxmath}   % math in the same Times family as the body text
 
 \newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
 
-\title{One Config Value, Thirty Points:\\
-Configuration Defaults and the Reproducibility of a\\
+\title{What a Success Rate Measures:\\
+Configuration, Compute and Sampling in a\\
 Robot Learning Benchmark}
 \author{Yandong Huang\\
 \small Beijing Information Science and Technology University}
@@ -23,16 +28,16 @@ Robot Learning Benchmark}
 \maketitle
 
 \begin{abstract}
-Reproducing published results in robot learning is routinely difficult, yet
-\emph{how much} a reproduction is off and \emph{why} usually remain anecdotal.
-Taking one widely used open-source stack (LeRobot v0.6.1) and its reference task
-(PushT), we use a $2\times2$ factorial design with 200 paired rollouts per cell to
+A reported success rate is a function of the method, of how it was configured,
+and of how it was measured, yet only the first is usually written down. Taking
+one widely used open-source stack (LeRobot v0.6.1) and its reference task
+(PushT), we use a $2\times2$ factorial design with 200 paired episodes per cell to
 decompose the gap between the published success rate (65.4\%) and what the library
 yields out of the box (33.0\%). A single configuration field, \texttt{crop\_shape},
 accounts for the dominant share: enabling it alone raises success from 33.0\% to
-55.0\% ($+22.0$ pp, $p<0.0001$), and with the remaining official defaults the cell
-reaches 63.5\%. GroupNorm together with random backbone initialization contributes
-only $+2.0$ pp on its own ($p=0.36$). Three separate experiments show that training
+55.0\% ($+22.0$ percentage points, pp; $p<0.0001$), and with the remaining fields of
+the published recipe that cell reaches 63.5\%. GroupNorm together with random
+backbone initialization contributes only $+2.0$ pp on its own ($p=0.36$). Three separate experiments show that training
 budget is not the lever: $2\times$, $5\times$ and $6\times$ more optimization
 produce no measurable gain. We further measure the evaluation noise floor with
 eleven disjoint blocks of 50 initial states: the observed block-to-block spread
@@ -47,14 +52,46 @@ additional compute at all, while the only compute-expensive option we test is
 measurably ineffective.
 \end{abstract}
 
+\begingroup   % \captionof outside a float leaks \parindent=0 to the rest of the document
+\vspace{0.4em}
+\enlargethispage{1.5\baselineskip}
+\begin{center}
+\includegraphics[width=0.55\linewidth]{figs/fig2_factorial.pdf}
+\end{center}
+\vspace{-1.4em}
+\captionof{figure}{Headline result. Same code, same data, same training budget: the
+measured success rate differs by thirty percentage points depending only on which
+configuration fields match the published recipe. Grey, library defaults; blue,
+\texttt{crop\_shape} enabled, the rightmost bar additionally restoring GroupNorm and
+a randomly initialized backbone (the full published recipe). Error bars are Wilson
+95\% intervals over 200 paired episodes; exact counts and paired tests are in
+Tables~\ref{tab:factorial} and~\ref{tab:paired}.}
+\label{fig:factorial}
+\vspace{0.4em}
+\endgroup
+
 \section{Introduction}
 
 A practitioner who installs an open-source robot learning library and trains the
 reference policy on the reference task expects to land near the published number.
-In our case they do not: the published Diffusion Policy result on PushT is 65.4\%
-\cite{lerobot-dp}, whereas the same library with its shipped defaults yields
-33.0\% --- a gap of roughly thirty percentage points, with a training loss that
-looks entirely healthy.
+In our case they do not: the published Diffusion Policy \cite{chi-dp} result on
+PushT is 65.4\% \cite{lerobot-dp}, whereas the same library with its shipped defaults yields
+33.0\%, a gap of roughly thirty percentage points, with a training loss that
+looks entirely healthy. The two numbers come from different checkpoints, 175k and
+120k; the budget study in \S\ref{sec:budget} shows that doubling ours moves the
+default cell by 2.0 pp, so the checkpoint difference cannot carry the gap.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figs/fig0_divergence.pdf}
+\caption{Same initial state, two configurations. Top row: the published recipe
+drives the T-block onto the green target in 118 steps. Bottom row: with the
+library's shipped defaults the block barely moves and the episode times out at
+300 steps. Columns are 0/25/50/75/100\% of each episode's recording
+(evaluation video, episode~1 of the paired 200-episode set); frames are the raw
+384$\times$384 renders with no post-processing.}
+\label{fig:divergence}
+\end{figure}
 
 The natural first hypotheses are (i) insufficient training, (ii) insufficient data,
 and (iii) a bug. We test the first directly and reject it; the second is bounded by
@@ -62,21 +99,22 @@ prior work; and the third turns out to be the wrong frame: no line of code is
 incorrect. What differs is which of the library's configuration fields are set,
 and the library neither reports nor warns about the consequences.
 
-This paper makes four contributions:
+This paper makes five contributions:
 \begin{enumerate}
   \item A $2\times2$ factorial decomposition of a 30-point reproduction gap at 200
-        paired rollouts per cell, attributing it primarily to one configuration
+        paired episodes per cell, attributing it primarily to one configuration
         field (\S\ref{sec:factorial}).
   \item Three independent demonstrations that training budget is not the lever
         (\S\ref{sec:budget}).
-  \item The first measured evaluation noise floor for this benchmark: eleven
+  \item To our knowledge, the first reported evaluation noise floor for this benchmark: eleven
         disjoint seed blocks, with overdispersion formally tested
         (\S\ref{sec:noise}).
   \item Evidence that the same configuration choice flips the statistical
         conclusion of a method comparison (\S\ref{sec:method}).
-  \item A cost-normalized ordering of interventions and a five-step diagnostic
+  \item A cost-normalized ordering of interventions and a six-step diagnostic
         protocol for failed reproductions (\S\ref{sec:where}, \S\ref{sec:protocol}).
 \end{enumerate}
+
 We do not claim that any method is better than another; we claim that the
 measurement is configuration-dependent in a way that is currently unreported.
 
@@ -84,20 +122,34 @@ measurement is configuration-dependent in a way that is currently unreported.
 
 \textbf{Benchmark construction.} RLBench \cite{rlbench} and REPLAB
 \cite{replab} standardize tasks and hardware respectively. Neither studies how
-the \emph{software configuration} of a policy affects measured performance.
+the \emph{software configuration} of a policy affects measured performance. For
+imitation learning, \cite{robomimic} varies data quantity, data quality,
+observation modalities and algorithm family on a fixed task suite; that design
+varies the training inputs, whereas we vary the library configuration under
+which a published number is reproduced.
 
 \textbf{Reproducibility frameworks.} MIRRER \cite{mirrer} proposes a conceptual
 framework for iterated, reproduced and replicated experiments and states that a
 first step is ``simply reporting the resulting performance metrics from several
 iterated and reproduced experiments and calculating the variance between them.''
-To our knowledge this measurement has not been reported for a VLA-style policy.
+To our knowledge this measurement has not been reported for a robot-learning
+benchmark.
 RB2 \cite{rb2} quantifies a 20\% change when the same experiment is run in two
 different \emph{physical} laboratories and proposes local relative ranking. Our
-setting has zero physical variation --- one machine, one room, identical hardware
---- and still exhibits a larger shift.
+setting has zero physical variation (one machine, one room, identical hardware)
+and still exhibits a larger shift.
 
-\textbf{Statistical evaluation.} STEP \cite{step} addresses how many trials are
-needed to compare two policies in the 10--50 trial regime. Such tests presuppose
+\textbf{Variance and statistical rigor.} In deep reinforcement learning, seed
+choice, implementation details and the reporting protocol are known to move
+measured performance by enough to change conclusions
+\cite{henderson,engstrom,agarwal,bouthillier}. Those studies compare
+algorithms within one stack; the variation we report arises before training, in
+configuration fields the library treats as incidental. \cite{bouthillier}
+argue that benchmark variance should be estimated rather than assumed small,
+which \S\ref{sec:noise} does here.
+
+\textbf{Statistical evaluation.} STEP \cite{step} addresses how many episodes are
+needed to compare two policies in the 10--50 episode regime. Such tests presuppose
 that the two measurements were taken under comparable conditions. Our results
 indicate this presupposition can fail even within a single library and a single
 machine. Observation-contract auditing \cite{obscontract} detects, statically from
@@ -128,7 +180,7 @@ so reward saturates at 1.0 exactly at the success threshold.
 same initial states, so all comparisons reported here are \emph{paired}; we use the
 exact McNemar test on discordant pairs and Wilson intervals for marginal rates.
 
-\textbf{Determinism.} Two library behaviours had to be neutralized before any
+\textbf{Determinism.} Two library behaviors had to be neutralized before any
 comparison was meaningful: cuDNN autotuning (\texttt{cudnn.benchmark}) selected
 different convolution algorithms per process, producing episode-level reward
 differences of $197.30$ versus $63.91$ for an identical configuration and seed;
@@ -167,6 +219,15 @@ interaction is $+13.0$ pp with a bootstrap 95\% interval of $[+0.0, +25.5]$,
 i.e.\ marginal. Paired McNemar tests (Table~\ref{tab:paired}) confirm that both
 crop contrasts are decisive while neither GroupNorm contrast is.
 
+A second training seed for the crop-on, GroupNorm-off cell (seed 200000 instead of
+100000, all else identical) reaches 116/200 $=58.0\%$ against 110/200 $=55.0\%$ for
+the first, a difference of $+3.0$ pp (paired bootstrap 95\% interval
+$[-6.5, +12.5]$). On the shared 200 initial states the two checkpoints agree on only
+104 episodes: 96 change outcome, 45 in one direction and 51 in the other (exact
+McNemar $p=0.61$). The crop effect therefore survives a change of training seed
+while the per-episode outcome does not, so what replicates across seeds is the
+marginal rate rather than the individual trial.
+
 \begin{table}[t]
 \centering
 \caption{Paired exact McNemar tests over 200 shared initial states.}
@@ -186,10 +247,10 @@ default $\rightarrow$ full recipe & 20 & 81 & $<0.0001$ \\
 
 Two consequences follow. First, the configuration field that separates a 33.0\%
 measurement from the published 65.4\% is one whose effect is invisible in the
-training loss. Second, restoring \emph{any single} official value is insufficient:
-crop alone is necessary and largely sufficient, but the full recipe reaches
-63.5\%, statistically indistinguishable from the published figure measured over 500
-episodes.
+training loss. Second, no \emph{single} field closes the gap on its own:
+\texttt{crop\_shape} is necessary and accounts for most of it, and only the full
+published recipe reaches 63.5\%, statistically indistinguishable from the published
+figure measured over 500 episodes.
 
 \textbf{An upstream fix that misses this field.} The library's default for the
 image encoder and for GroupNorm was changed in a merged pull request in May 2026,
@@ -221,7 +282,7 @@ crop-only cell produces \emph{exactly} the same number of successes at both budg
 non-monotonic across five checkpoints (42.0, 48.0, 62.0, 48.0, 64.0\%) and flat
 within the $\pm13$ pp interval of a 50-episode evaluation; and an ACT policy
 trained for $6\times$ longer (0.8M $\rightarrow$ 4.8M samples) moves from 27.0\% to
-29.5\% (31 vs 36 discordant, $p=0.63$). Three model families, three budget
+29.5\% (31 vs 36 discordant, $p=0.63$). Two model families, three budget
 multipliers, no measurable gain.
 
 \subsection{The evaluation noise floor}
@@ -233,21 +294,39 @@ configuration, give success rates of 28, 32, 18, 14, 28, 28, 18, 28, 28, 30 and
 prediction of $\pm6.2$ pp (ratio $0.97$); a $\chi^2$ overdispersion test gives
 $\chi^2=9.4$ with df$=10$ ($p=0.50$). There is no evidence of extra-binomial
 variance: at $n=50$, uncertainty is entirely attributable to sample size. This is,
-to our knowledge, the measurement called for by \cite{mirrer} but not previously
-reported, and it justifies the use of binomial / Wilson intervals throughout.
+to our knowledge, the measurement called for by \cite{mirrer} and by the variance-reporting
+framework of \cite{bouthillier}, but not previously
+reported, and it justifies the use of binomial / Wilson intervals throughout. This
+statement concerns evaluation noise at a fixed checkpoint. Training adds a second,
+larger source of variation, measured in \S\ref{sec:factorial}: two seeds of the
+same cell differ by 3.0 pp in the marginal rate yet disagree on 96 of 200
+individual episodes. The binomial interval says how precisely a fixed policy is
+measured, not how reproducible a training run is.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.62\linewidth]{figs/fig1_noise_floor.pdf}
+\caption{Evaluation noise floor. Eleven disjoint blocks of 50 initial states, same
+checkpoint and configuration. Bars are per-block success rates; the shaded band is
+the 95\% binomial interval implied by $n=50$ at the pooled rate (25.6\%). All eleven
+blocks fall inside the band, so the spread is accounted for by sample size alone
+($\chi^2=9.4$, df$=10$, $p=0.50$).}
+\label{fig:noise}
+\end{figure}
 
 \subsection{What this does to a method comparison}
 \label{sec:method}
 
-Holding the evaluation protocol fixed, we compare ACT (100k and 200k training
-steps) against Diffusion Policy under two configurations. With the library
+Holding the evaluation protocol fixed, we compare ACT \cite{zhao-act} (100k and
+200k training steps) against Diffusion Policy \cite{chi-dp} under two
+configurations. With the library
 defaults, DP at 33.0\% and ACT at 29.5\% are indistinguishable (37 vs 44
-discordant, $p=0.51$). With the official recipe, DP at 63.5\% dominates (13 vs 81,
+discordant, $p=0.51$). With the published recipe, DP at 63.5\% dominates (13 vs 81,
 $p<0.0001$). The configuration choice alone moves the comparison from a null result
 to a decisive one.
 
 We emphasize what this does \emph{not} establish. The ACT policy was not
-configuration-tuned: ACT has no official PushT recipe to restore, so we cannot
+configuration-tuned: ACT has no published PushT recipe to restore, so we cannot
 exclude that a better-configured ACT would perform differently. The claim is
 therefore not about the relative merit of the two methods, but about the fragility
 of the comparison itself.
@@ -256,18 +335,32 @@ of the comparison itself.
 \label{sec:na}
 
 For ACT, the number of actions executed before replanning has a sharp interior
-optimum: success is 0, 6, 4, 12, 10, \textbf{28}, 22, 4 and 0\% for
-\texttt{n\_action\_steps} of 1, 2, 4, 6, 8, 10, 20, 50 and 100 respectively
-(50 episodes each). For SmolVLA, tuned on the same data, the ordering is 2\% at
-\texttt{n}=50, 14\% at 20, and 24\% at both 10 and 5; the 24\% vs 2\% contrast is
-12:1 under a paired test ($p=0.0034$). The optimal open-loop horizon is 5--10
-actions in both cases even though the prediction horizons (100 and 50) and model
-sizes (80M and 450M) differ by a factor of five, which suggests the quantity is set
-by the task's temporal scale rather than by the architecture.
-These two sweeps use 50 episodes per setting rather than the 200 used elsewhere in
-this paper. Adjacent settings differ by only a few percentage points, which a
-50-episode sample cannot resolve; the coarse shape of the curves, and in particular
-the collapse above 50 actions, is however far outside that uncertainty.
+optimum: success is 0.5, 1.5, 3.0, 10.5, 17.0, \textbf{27.0}, 18.5, 6.0 and 1.0\%
+for \texttt{n\_action\_steps} of 1, 2, 4, 6, 8, 10, 20, 50 and 100 respectively.
+For SmolVLA \cite{smolvla}, a 450M language-conditioned policy fine-tuned on the
+same data (the only model here that takes text as input; ACT and Diffusion
+Policy are purely visuomotor), the ordering is
+6.5\% at \texttt{n}=50,
+8.0\% at 20, and 23.5\% at 10 and 21.0\% at 5; the last two are indistinguishable
+(33 vs 28 discordant, $p=0.61$), while ten against fifty is decisive (40 vs 6,
+$p<0.0001$). Both architectures peak between five and ten actions executed
+open-loop and fall by a factor of three to four by fifty, even though the
+prediction horizons (100 and 50) and model sizes (80M and 450M) differ by a factor
+of five, which suggests the quantity is set by the task's temporal scale rather
+than by the architecture. For ACT the peak is resolved: ten beats eight (41 vs 21,
+$p=0.015$) and twenty is borderline (43 vs 26, $p=0.053$). All settings use the
+same 200-episode protocol as the rest of the paper.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.78\linewidth]{figs/fig3_na.pdf}
+\caption{A shared interior optimum for open-loop execution. Success rate against
+the number of actions executed before replanning, for ACT (chunk 100, 80M
+parameters) and SmolVLA (chunk 50, 450M parameters); 200 episodes per point, Wilson
+95\% intervals. Both architectures peak at 5--10 actions and fall by a factor of three to four by 50,
+despite a fivefold difference in prediction horizon and model size.}
+\label{fig:na}
+\end{figure}
 
 \section{Where to Spend: A Cost-Normalized View}
 \label{sec:where}
@@ -282,12 +375,12 @@ can order the interventions by what they buy per unit of compute
 difference that did not reach significance. All figures are from the same task and
 hardware; they are a ranking within this study, not a universal law.}
 \label{tab:cost}
-\begin{tabular}{p{4.6cm}cp{2.2cm}p{3.6cm}}
+\begin{tabular}{p{6.2cm}cp{2.2cm}p{3.0cm}}
 \toprule
 Intervention & $\Delta$ success & Extra GPU-h & Nature of change \\
 \midrule
-\texttt{n\_action\_steps} 50$\rightarrow$10 (SmolVLA) & $+22$ pp & 0 & inference-time \\
-\texttt{n\_action\_steps} 1$\rightarrow$10 (ACT)      & $+28$ pp & 0 & inference-time \\
+\texttt{n\_action\_steps} 50$\rightarrow$10 (SmolVLA) & $+17$ pp & 0 & inference-time \\
+\texttt{n\_action\_steps} 1$\rightarrow$10 (ACT)      & $+27$ pp & 0 & inference-time \\
 \texttt{crop\_shape} none$\rightarrow[84,84]$         & $+22$ pp & 0 & configuration \\
 episode budget 300$\rightarrow$600                     & $+32$ pp & 0 & task definition \\
 \midrule
@@ -301,8 +394,8 @@ dataset reduced to $1/4$                               & $-24$ pp & --- & data \
 
 The two largest gains that survive scrutiny are obtained by changing a value in a
 configuration file or an inference-time parameter. Neither costs a single
-additional GPU-hour. The one intervention that does cost compute --- longer
-optimization --- produces differences that our sample sizes cannot distinguish from
+additional GPU-hour. The one intervention that does cost compute, longer
+optimization, produces differences that our sample sizes cannot distinguish from
 zero, at two different multipliers and in two different model families.
 
 We deliberately exclude the 300$\rightarrow$600 episode result from the ``gain''
@@ -330,16 +423,25 @@ information gained to time spent. Each addresses a specific symptom.
         saturating score can rank methods differently from the success rate.
   \item \textbf{Diff configurations against the reference artifact.} Field-by-field
         comparison of the stored training configuration against the published
-        checkpoint's configuration located all four discrepancies in this study.
+        checkpoint's configuration located all four fields in which the two differ, one of them inert with a
+        single camera.
         Visual inspection of two YAML files does not scale; a sorted diff does.
   \item \textbf{Use a factorial rather than one-factor-at-a-time.} A single-factor
         sweep would have concluded that the normalization change was useless (it
-        costs 4.5 pp on its own) and stopped. The $2\times2$ revealed that the
+        costs 4.5 pp in the crop-off cell and gains 8.5 pp in the crop-on cell,
+        averaging $+2.0$ pp) and stopped. The $2\times2$ revealed that the
         effect of the input crop depends on the normalization choice.
   \item \textbf{Pair the evaluations and report $n$ with an interval.} Reusing the
         same initial states across configurations multiplies the sensitivity of the
         comparison; reporting a bare success rate with $n=50$ hides a $\pm12$ pp
         interval that is larger than most claimed improvements.
+  \item \textbf{Check every input the policy conditions on, text included.} A
+        language-conditioned policy evaluated without the instruction it was trained
+        with runs silently: the command succeeds, metrics are written, nothing warns.
+        In our stack the missing variable defaulted to the empty string, so a policy
+        conditioned on it lost a factor of three to four in success rate with no
+        traceback. Assert that the instruction, the camera key names and the state
+        fields are exactly the ones the checkpoint was trained with.
 \end{enumerate}
 
 \section{Discussion}
@@ -365,9 +467,10 @@ argument for doing them before spending compute.
 \textbf{Single task, simulation only.} All experiments use PushT. Generalization to
 other environments is untested and is the most important open question.
 
-\textbf{One training seed.} The factorial is replicated across two training budgets
-but not yet across training seeds; a second seed is in progress at the time of
-writing.
+\textbf{Two training seeds for one cell only.} The crop-on, GroupNorm-off cell was
+trained twice (55.0\% and 58.0\%, $p=0.61$); the other three cells rest on a single
+seed each, so the seed-to-seed band is estimated from one cell rather than
+characterized across the factorial.
 
 \textbf{ACT was not configuration-tuned}, as discussed in \S\ref{sec:method}.
 
@@ -417,6 +520,46 @@ RB2: Robotic Manipulation Benchmarking with a Twist. arXiv:2203.08098, 2022.
 D.~Snyder et al.
 Is Your Imitation Learning Policy Better than Mine? Policy Comparison with
 Near-Optimal Stopping. arXiv:2503.10966, 2025.
+
+\bibitem{chi-dp}
+C.~Chi, Z.~Xu, S.~Feng, et al.
+\emph{Diffusion Policy: Visuomotor Policy Learning via Action Diffusion}.
+RSS 2023. arXiv:2303.04137.
+
+\bibitem{zhao-act}
+T.~Z.~Zhao, V.~Kumar, S.~Levine, C.~Finn.
+\emph{Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware}.
+RSS 2023. arXiv:2304.13705.
+
+\bibitem{smolvla}
+M.~Shukor, D.~Aubakirova, F.~Capuano, et al.
+\emph{SmolVLA: A Vision-Language-Action Model for Affordable and Efficient
+Robotics}. arXiv:2506.01844, 2025.
+
+\bibitem{robomimic}
+A.~Mandlekar, D.~Xu, J.~Wong, et al.
+\emph{What Matters in Learning from Offline Human Demonstrations for Robot
+Manipulation}. CoRL 2021. arXiv:2108.03298.
+
+\bibitem{henderson}
+P.~Henderson, R.~Islam, P.~Bachman, et al.
+\emph{Deep Reinforcement Learning that Matters}. AAAI 2018. arXiv:1709.06560.
+
+\bibitem{engstrom}
+L.~Engstrom, A.~Ilyas, S.~Santurkar, et al.
+\emph{Implementation Matters in Deep Policy Gradients: A Case Study on PPO and
+TRPO}. ICLR 2020. arXiv:2005.12729.
+
+\bibitem{agarwal}
+R.~Agarwal, M.~Schwarzer, P.~S.~Castro, et al.
+\emph{Deep Reinforcement Learning at the Edge of the Statistical Precipice}.
+NeurIPS 2021. arXiv:2108.13264.
+
+\bibitem{bouthillier}
+X.~Bouthillier, P.~Delaunay, M.~Bronzi, et al.
+\emph{Accounting for Variance in Machine Learning Benchmarks}. MLSys 2021.
+arXiv:2103.03098.
+
 
 \bibitem{obscontract}
 Observation-contract auditing for valid modality comparison in robot manipulation

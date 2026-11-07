@@ -1,53 +1,28 @@
-# arXiv 稿件
+# 论文源文件
 
-`main.tex` —— 当前是完整的初稿（约 6 页）。**没有本地 LaTeX，用 Overleaf 编译。**
+`main.tex` + `figs/*.pdf` + 编译好的 `main.pdf`。
 
-## 怎么出 PDF
+## 怎么编译
 
-1. 打开 `overleaf.com`，注册/登录（免费）
-2. **New Project → Blank Project**
-3. 把 `main.tex` 的内容整个粘进去（或 Upload 这个文件）
-4. 点 **Recompile**，右侧出 PDF
-5. 下载 PDF 即可
+本地（MiKTeX 或 TeX Live 都行），连编两遍让交叉引用正确：
 
-Overleaf 默认就是 pdflatex，`booktabs`/`hyperref` 都是标准包，不用额外配置。
+```bash
+pdflatex main.tex && pdflatex main.tex
+```
 
-## 投稿前必须填/改的地方
+或者在 Overleaf：New Project → Upload，**整个 `paper/` 目录一起传（含 `figs/`）**，然后 Recompile。
 
-`main.tex` 里搜 `TODO`，共三处：
+依赖包全是 TeX Live 自带：`geometry`、`amsmath`、`amssymb`、`graphicx`、`caption`、`booktabs`、`array`、`hyperref`、`xcolor`、`fontenc`、`newtxtext`、`newtxmath`。
 
-| 位置 | 要填什么 |
-|---|---|
-| `\author{}` | 单位、邮箱（arXiv 需要能联系到你） |
-| `\S\ref{sec:na}` 末尾 | na 扫描目前是 50 局，补到 200 局后删掉这行 TODO |
-| `Limitations` 末尾 | 第二个训练种子跑完后补一句 |
+## 当前版本
 
-## 投稿前还要做的三件事
+- 标题：**What a Success Rate Measures: Configuration, Compute and Sampling in a Robot Learning Benchmark**
+- 10 页 / 4 图 / 3 表 / 18 条参考文献
+- 统一口径：200 局、300 步、eval `seed=1000`、batch 22 同步环境
 
-1. **补 na 扫描到 200 局**（ACT 9 档 + SmolVLA 4 档，约 90 分钟）——
-   否则论文里两套口径（2×2 是 200 局、na 是 50 局），审稿人一眼看出来
-2. **画一张图**：11 个种子块的成功率 + 二项预期带，替换或补充表 4 的叙述
-3. **确认 arXiv endorsement**——第一次投可能需要一位已发表作者背书
+## 正在进行的更新
 
-## 现在的论文骨架
-
-| 节 | 内容 | 证据强度 |
-|---|---|---|
-| 摘要 | 30pp 差距 + 一个字段 + 三处否证 + 噪声地板 + 成本排序 | — |
-| §4.1 | 2×2 析因（200 局配对）+ 与上游 PR #3202 的对照 | 强 |
-| §4.2 | 训练预算不是杠杆（三处） | 强 |
-| §4.3 | 噪声地板（11 块） | 强 |
-| §4.4 | 方法比较的脆弱性 | 中（已声明 ACT 未调优） |
-| §4.5 | na 的跨架构最优区间 | 中（50 局，待补） |
-| **§5** | **成本归一化排序：零算力干预 > 算力干预**（表 4） | **强（全部实测）** |
-| **§6** | **复现失败的五步排查协议** | 方法贡献，非实验 |
-| §7 | 讨论：实现缺陷 vs 约定错配 | — |
-| §8 | 局限 | — |
-| §9 | 可复现声明 | — |
-
-## 已知的软肋（审稿人最可能攻击的）
-
-1. **单一任务** —— 已在 Limitations 里写明
-2. **一个训练种子** —— 第二个正在跑
-3. **§4.4 的 ACT 未调优** —— 已在正文主动声明并限定了主张范围
-4. **交互项 +13pp 边缘显著** —— 正文写成 marginal，没有当结论用
+2×2 的每一格正在补到 **3 个训练种子**（`train_seed_block.sh` / `eval_seed_block.sh`）。
+跑完后，摘要、表 1、表 4、图 2 和 §4.1 的效应量会用**种子均值**替换现在的单点估计
+（例如 baseline 33.0% → 约 37%，crop 效应 +22.0 → 约 +22pp，GN 效应 −4.5 → 约 −11.8pp）。
+届时 `main.tex` 与 `main.pdf` 会再同步一次，中间的版本请不要引用。

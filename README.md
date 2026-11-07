@@ -1,14 +1,15 @@
-# One Config Value, Thirty Points — artifact
+# What a Success Rate Measures — artifact
 
-Code, raw results and source patches for the paper *"One Config Value, Thirty
-Points: Configuration Defaults and the Reproducibility of a Robot Learning
-Benchmark"*.
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24034428.svg)](https://doi.org/10.5281/zenodo.24034428)
+
+Code, raw results and source patches for the paper *"What a Success Rate Measures:
+Configuration, Compute and Sampling in a Robot Learning Benchmark"*.
 
 ## What is here
 
 | Path | Contents |
 |---|---|
-| `paper/main.tex` | the manuscript (compile with pdflatex, or upload to Overleaf) |
+| `paper/` | manuscript source, compiled PDF (10 pages) and figures |
 | `results/eval/` | 65 `eval_info.json` files — per-episode `successes`, `max_rewards`, `done_steps` for every evaluation reported in the paper |
 | `patches/` | 15 source changes against LeRobot `7e241bd6`, without which the numbers are not reproducible |
 | `scripts/` | training, evaluation and statistics scripts |
@@ -17,13 +18,34 @@ Benchmark"*.
 
 ## Headline numbers
 
-| Setting | Success (200 episodes) |
-|---|---|
-| Diffusion Policy, library defaults | 33.0 % (66/200) |
-| + `crop_shape=[84,84]` only | 55.0 % (110/200) |
-| + GroupNorm and random backbone | 63.5 % (127/200) |
-| published reference | 65.4 % (500 episodes) |
-| same checkpoint, 11 seed blocks of 50 | 14 % – 32 % |
+| Setting | Single seed | Three-seed mean |
+|---|---|---|
+| Diffusion Policy, library defaults | 33.0 % | **37.2 %** |
+| GroupNorm and random backbone only | 28.5 % | **25.3 %** |
+| + `crop_shape=[84,84]` only | 55.0 % | **59.5 %** |
+| + GroupNorm and random backbone | 63.5 % | in progress |
+| published reference (500 episodes) | — | 65.4 % |
+
+The three-seed means come from `train_seed_block.sh` / `eval_seed_block.sh`
+(120k steps per run, 200 episodes per evaluation). The manuscript currently
+reports the single-seed values and will be updated to the seed means once the
+remaining two runs finish. Both are 200-episode paired evaluations on the same
+initial states.
+
+## Citation
+
+```bibtex
+@software{huang_pusht_repro_2026,
+  author    = {Huang, Yandong},
+  title     = {PushT reproduction artifact: configuration, compute and sampling
+               in a robot learning benchmark},
+  year      = {2026},
+  publisher = {Zenodo},
+  version   = {v1.0.0},
+  doi       = {10.5281/zenodo.24034428},
+  url       = {https://doi.org/10.5281/zenodo.24034428}
+}
+```
 
 ## Reproducing
 
