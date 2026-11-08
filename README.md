@@ -18,19 +18,26 @@ Configuration, Compute and Sampling in a Robot Learning Benchmark"*.
 
 ## Headline numbers
 
-| Setting | Single seed | Three-seed mean |
-|---|---|---|
-| Diffusion Policy, library defaults | 33.0 % | **37.2 %** |
-| GroupNorm and random backbone only | 28.5 % | **25.3 %** |
-| + `crop_shape=[84,84]` only | 55.0 % | **59.5 %** |
-| + GroupNorm and random backbone | 63.5 % | in progress |
-| published reference (500 episodes) | — | 65.4 % |
+Every cell is averaged over three training seeds (seeds 100k / 300k / 400k), each
+evaluated on 200 episodes under the same protocol.
 
-The three-seed means come from `train_seed_block.sh` / `eval_seed_block.sh`
-(120k steps per run, 200 episodes per evaluation). The manuscript currently
-reports the single-seed values and will be updated to the seed means once the
-remaining two runs finish. Both are 200-episode paired evaluations on the same
-initial states.
+| Setting | Success (mean ± seed sd) |
+|---|---|
+| Diffusion Policy, library defaults | **37.2 ± 3.7 %** |
+| GroupNorm and random backbone only | **25.3 ± 2.8 %** |
+| + `crop_shape=[84,84]` only | **59.5 ± 5.4 %** |
+| + GroupNorm and random backbone | **63.2 ± 6.5 %** |
+| published reference (500 episodes) | 65.4 % |
+
+Seed-to-seed spread is 2.8–6.5 pp per cell (pooled 4.8 pp), comparable to the
+3.1–3.5 pp binomial standard error of a 200-episode evaluation and an order of
+magnitude below the effects. The two configuration fields are not independent:
+`crop_shape` is worth 22.3 pp without GroupNorm and 37.8 pp with it, while
+GroupNorm with a random backbone costs 11.8 pp alone and gains 3.7 pp once
+cropping is on (interaction +15.5 pp, 2.8 seed standard errors).
+
+Reproduce with `train_seed_block.sh` (12 runs, 120k steps each) and
+`eval_seed_block.sh` (200 episodes per checkpoint).
 
 ## Citation
 

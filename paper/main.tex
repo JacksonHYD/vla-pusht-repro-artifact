@@ -33,11 +33,15 @@ and of how it was measured, yet only the first is usually written down. Taking
 one widely used open-source stack (LeRobot v0.6.1) and its reference task
 (PushT), we use a $2\times2$ factorial design with 200 paired episodes per cell to
 decompose the gap between the published success rate (65.4\%) and what the library
-yields out of the box (33.0\%). A single configuration field, \texttt{crop\_shape},
-accounts for the dominant share: enabling it alone raises success from 33.0\% to
-55.0\% ($+22.0$ percentage points, pp; $p<0.0001$), and with the remaining fields of
-the published recipe that cell reaches 63.5\%. GroupNorm together with random
-backbone initialization contributes only $+2.0$ pp on its own ($p=0.36$). Three separate experiments show that training
+yields out of the box (37.2\%). A single configuration field, \texttt{crop\_shape},
+accounts for the dominant share: enabling it alone raises success from 37.2\% to
+59.5\% ($+22.3$ percentage points, pp), and with the remaining fields of the
+published recipe that cell reaches 63.2\%. The two settings interact: GroupNorm
+with a random backbone costs 11.8 pp on its own but adds 3.7 pp once cropping is
+enabled, an interaction of $+15.5$ pp (2.8 seed standard errors) that a
+one-factor-at-a-time sweep would read as a useless change. Averaged over three
+training seeds per cell, the seed-to-seed standard deviation is 2.8--6.5 pp,
+comparable to the 3.4 pp sampling error of a 200-episode evaluation. Three separate experiments show that training
 budget is not the lever: $2\times$, $5\times$ and $6\times$ more optimization
 produce no measurable gain. We further measure the evaluation noise floor with
 eleven disjoint blocks of 50 initial states: the observed block-to-block spread
@@ -76,7 +80,7 @@ A practitioner who installs an open-source robot learning library and trains the
 reference policy on the reference task expects to land near the published number.
 In our case they do not: the published Diffusion Policy \cite{chi-dp} result on
 PushT is 65.4\% \cite{lerobot-dp}, whereas the same library with its shipped defaults yields
-33.0\%, a gap of roughly thirty percentage points, with a training loss that
+37.2\%, a gap of 28 percentage points, with a training loss that
 looks entirely healthy. The two numbers come from different checkpoints, 175k and
 120k; the budget study in \S\ref{sec:budget} shows that doubling ours moves the
 default cell by 2.0 pp, so the checkpoint difference cannot carry the gap.
@@ -101,9 +105,9 @@ and the library neither reports nor warns about the consequences.
 
 This paper makes five contributions:
 \begin{enumerate}
-  \item A $2\times2$ factorial decomposition of a 30-point reproduction gap at 200
-        paired episodes per cell, attributing it primarily to one configuration
-        field (\S\ref{sec:factorial}).
+  \item A $2\times2$ factorial decomposition of the reproduction gap, three
+        training seeds per cell and 200 paired episodes each, attributing it to two
+        coupled configuration fields of which one dominates (\S\ref{sec:factorial}).
   \item Three independent demonstrations that training budget is not the lever
         (\S\ref{sec:budget}).
   \item To our knowledge, the first reported evaluation noise floor for this benchmark: eleven
@@ -188,49 +192,60 @@ and action sampling drew from a global RNG whose state carried over between
 evaluation batches. Both are patched. With the patches, two independent evaluations
 of the same checkpoint are bit-identical.
 
-\textbf{Design.} Four training runs share dataset, batch size (64), step count
-(120k), horizon, and training seed; they differ only in whether \texttt{crop\_shape}
-is $[84,84]$ and whether GroupNorm is enabled together with randomly initialized
-backbone weights (the two are bound in code and cannot be separated).
+\textbf{Design.} Twelve training runs --- four configurations crossed with three
+training seeds --- share dataset, batch size (64), step count (120k) and horizon;
+they differ only in whether \texttt{crop\_shape} is $[84,84]$ and whether GroupNorm
+is enabled together with randomly initialized backbone weights (the two are bound
+in code and cannot be separated).
 
 \section{Results}
 
-\subsection{A single field carries the gap}
+\subsection{Two coupled settings carry the gap}
 \label{sec:factorial}
 
 \begin{table}[t]
 \centering
-\caption{Success rate (\%), 200 episodes per cell, paired initial states.
-Wilson 95\% intervals in brackets.}
+\caption{Success rate (\%), averaged over three training seeds per cell; each
+seed contributes 200 episodes on the same initial states. $\pm$ is one standard
+deviation across seeds.}
 \label{tab:factorial}
 \begin{tabular}{lcc}
 \toprule
  & crop off & crop on \\
 \midrule
-GroupNorm off (ImageNet backbone) & 33.0 [26.9, 39.8] & 55.0 [48.1, 61.7] \\
-GroupNorm on (random backbone)    & 28.5 [22.7, 35.1] & \textbf{63.5} [56.6, 69.9] \\
+GroupNorm off (ImageNet backbone) & $37.2\pm3.7$ & $59.5\pm5.4$ \\
+GroupNorm on (random backbone)    & $25.3\pm2.8$ & $\mathbf{63.2\pm6.5}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:factorial} reports the $2\times2$. Main effects are $+2.0$ pp for
-GroupNorm with a random backbone and $+28.5$ pp for \texttt{crop\_shape}; the
-interaction is $+13.0$ pp with a bootstrap 95\% interval of $[+0.0, +25.5]$,
-i.e.\ marginal. Paired McNemar tests (Table~\ref{tab:paired}) confirm that both
-crop contrasts are decisive while neither GroupNorm contrast is.
+Table~\ref{tab:factorial} reports the $2\times2$, averaged over three training
+seeds per cell. Seed-to-seed standard deviations range from 2.8 to 6.5 pp (pooled
+4.8 pp), the same order as the 3.1--3.5 pp binomial standard error of a 200-episode
+evaluation and an order of magnitude below the effects below. Main effects are
+$-4.1$ pp for GroupNorm with a random backbone and $+30.1$ pp for
+\texttt{crop\_shape}; the interaction is $+15.5$ pp with a seed standard error of
+5.6 pp, 2.8 standard errors from zero.
 
-A second training seed for the crop-on, GroupNorm-off cell (seed 200000 instead of
-100000, all else identical) reaches 116/200 $=58.0\%$ against 110/200 $=55.0\%$ for
-the first, a difference of $+3.0$ pp (paired bootstrap 95\% interval
-$[-6.5, +12.5]$). On the shared 200 initial states the two checkpoints agree on only
-104 episodes: 96 change outcome, 45 in one direction and 51 in the other (exact
-McNemar $p=0.61$). The crop effect therefore survives a change of training seed
-while the per-episode outcome does not, so what replicates across seeds is the
-marginal rate rather than the individual trial.
+The two settings are not independent switches. GroupNorm with a random backbone
+alone costs 11.8 pp, yet in the crop-on column it gains 3.7 pp;
+\texttt{crop\_shape} is worth 22.3 pp without GroupNorm and 37.8 pp with it. A
+sweep that started from the defaults and changed one field at a time would have
+measured the GroupNorm change as harmful and stopped, and a practitioner who changed
+only the crop would capture two thirds of the available gain. Paired McNemar tests
+on a single seed pair (Table~\ref{tab:paired}) confirm that both crop contrasts are
+decisive while neither GroupNorm contrast is.
+
+Replication across seeds is marginal, not per-episode. Two seeds of the crop-on
+cell agree on only 104 of 200 outcomes even though their rates differ by three
+points (exact McNemar $p=0.61$). What reproduces is the rate, not the individual
+trial; reporting a single trained checkpoint therefore overstates what a reader can
+expect to reproduce.
 
 \begin{table}[t]
 \centering
-\caption{Paired exact McNemar tests over 200 shared initial states.}
+\caption{Paired exact McNemar tests over 200 shared initial states, computed on
+the seed-100000 checkpoint pair, where pairing is exact.}
 \label{tab:paired}
 \begin{tabular}{lccc}
 \toprule
@@ -245,11 +260,11 @@ default $\rightarrow$ full recipe & 20 & 81 & $<0.0001$ \\
 \end{tabular}
 \end{table}
 
-Two consequences follow. First, the configuration field that separates a 33.0\%
+Two consequences follow. First, the configuration field that separates a 37.2\%
 measurement from the published 65.4\% is one whose effect is invisible in the
 training loss. Second, no \emph{single} field closes the gap on its own:
 \texttt{crop\_shape} is necessary and accounts for most of it, and only the full
-published recipe reaches 63.5\%, statistically indistinguishable from the published
+published recipe reaches 63.2\%, statistically indistinguishable from the published
 figure measured over 500 episodes.
 
 \textbf{An upstream fix that misses this field.} The library's default for the
@@ -263,7 +278,8 @@ dominant factor here.
 
 \begin{table}[t]
 \centering
-\caption{Success rate (\%) at two training budgets, 200 episodes each.}
+\caption{Success rate (\%) at two training budgets, 200 episodes each, on the
+seed-100000 checkpoints (the other cells' budgets were not retrained).}
 \label{tab:budget}
 \begin{tabular}{lcc}
 \toprule
@@ -319,7 +335,8 @@ blocks fall inside the band, so the spread is accounted for by sample size alone
 
 Holding the evaluation protocol fixed, we compare ACT \cite{zhao-act} (100k and
 200k training steps) against Diffusion Policy \cite{chi-dp} under two
-configurations. With the library
+configurations, using the seed-100000 checkpoints throughout (identical
+evaluation settings, so the contrast is paired). With the library
 defaults, DP at 33.0\% and ACT at 29.5\% are indistinguishable (37 vs 44
 discordant, $p=0.51$). With the published recipe, DP at 63.5\% dominates (13 vs 81,
 $p<0.0001$). The configuration choice alone moves the comparison from a null result
@@ -381,7 +398,7 @@ Intervention & $\Delta$ success & Extra GPU-h & Nature of change \\
 \midrule
 \texttt{n\_action\_steps} 50$\rightarrow$10 (SmolVLA) & $+17$ pp & 0 & inference-time \\
 \texttt{n\_action\_steps} 1$\rightarrow$10 (ACT)      & $+27$ pp & 0 & inference-time \\
-\texttt{crop\_shape} none$\rightarrow[84,84]$         & $+22$ pp & 0 & configuration \\
+\texttt{crop\_shape} none$\rightarrow[84,84]$         & $+22$--$38$ pp & 0 & configuration \\
 episode budget 300$\rightarrow$600                     & $+32$ pp & 0 & task definition \\
 \midrule
 training $\times2$ (DP, 60k$\rightarrow$120k)          & $+2.0$ pp (n.s.) & $+7.3$ & optimization \\
@@ -427,9 +444,9 @@ information gained to time spent. Each addresses a specific symptom.
         single camera.
         Visual inspection of two YAML files does not scale; a sorted diff does.
   \item \textbf{Use a factorial rather than one-factor-at-a-time.} A single-factor
-        sweep would have concluded that the normalization change was useless (it
-        costs 4.5 pp in the crop-off cell and gains 8.5 pp in the crop-on cell,
-        averaging $+2.0$ pp) and stopped. The $2\times2$ revealed that the
+        sweep would have concluded that the normalization change was useless or
+        harmful (it costs 11.8 pp in the crop-off cell and gains 3.7 pp in the
+        crop-on cell, averaging $-4.1$ pp) and stopped. The $2\times2$ revealed that the
         effect of the input crop depends on the normalization choice.
   \item \textbf{Pair the evaluations and report $n$ with an interval.} Reusing the
         same initial states across configurations multiplies the sensitivity of the
@@ -467,10 +484,10 @@ argument for doing them before spending compute.
 \textbf{Single task, simulation only.} All experiments use PushT. Generalization to
 other environments is untested and is the most important open question.
 
-\textbf{Two training seeds for one cell only.} The crop-on, GroupNorm-off cell was
-trained twice (55.0\% and 58.0\%, $p=0.61$); the other three cells rest on a single
-seed each, so the seed-to-seed band is estimated from one cell rather than
-characterized across the factorial.
+\textbf{Three training seeds per cell.} Three seeds bound the seed-to-seed spread
+to 2.8--6.5 pp per cell, but three points give only two degrees of freedom, so each
+standard deviation is itself uncertain by roughly half. A tighter bound would need
+five or more seeds per cell.
 
 \textbf{ACT was not configuration-tuned}, as discussed in \S\ref{sec:method}.
 
